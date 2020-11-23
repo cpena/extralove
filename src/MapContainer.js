@@ -19,10 +19,10 @@ class MapContainer extends Component {
       scaledSize: { width: 40, height: 50 }
     }
     const center = {
-      lat: 6.5,
+      lat: 11.5,
       lng: -23.0
     }
-    const zoom = 2
+    const zoom = 3
     return (  
       <div>
         <Map google={this.props.google} 
@@ -31,10 +31,9 @@ class MapContainer extends Component {
           disableDefaultUI={false}
           styles={mapStyles}>
           {this.props.markers.map(m => {
-
             return <Marker
               key={m.id}
-              position={{ lat: m.lat + Math.random() * 5, lng: m.lng + Math.random() * 5 }}
+              position={{ lat: m.lat, lng: m.lng}}
               icon={iconImg}
               animation={this.props.google.maps.Animation.BOUNCE}
             />

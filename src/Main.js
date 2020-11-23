@@ -9,10 +9,13 @@ const TIMEOUT_SEND = 30000
 class Main extends React.Component {
   constructor (props) {
     super(props)
+
     this.currentDoc = null
     this.state = {
       status: 'idle',
-      loveStream: props.loveStream
+      loveStream: props.loveStream,
+      loveSendingCount: 0,
+      sendingTime: 0
     }
   }
 
@@ -55,9 +58,26 @@ class Main extends React.Component {
     }
   }
 
+  sendLove = (uid) => {
+    const startDate = new Date()
+    this.setState({loveSendingCount: this.state.loveSendingCount + 1}, () => {
+
+      const addLove = firebase.functions().httpsCallable('addLove')
+      addLove({ uid })
+        .then((result) => {
+          
+          const endDate   = new Date()
+          const sendingTime = (endDate.getTime() - startDate.getTime())
+          this.setState({loveSendingCount: this.state.loveSendingCount - 1, sendingTime})
+        })
+    })
+
+    
+  }
+
   render () {
     const { uid } = this.props
-    const { loveStream, status } = this.state
+    const { loveStream, status, loveSendingCount, sendingTime } = this.state
 
     console.log(status, loveStream)
     return (
@@ -67,12 +87,16 @@ class Main extends React.Component {
         </div>
         <div
           className={'Button ' + status}
+          /*
           onMouseDown={() => this.startSendingLove(uid)}
           onMouseUp={() => this.stopSendingLove()}
           onMouseLeave={() => this.stopSendingLove()}
           onTouchStart={() => this.startSendingLove(uid)}
           onTouchEnd={() => this.stopSendingLove()}
+          */
+          onClick={() => this.sendLove(uid)}
         />
+        <div className='Count'>SENDING: {loveSendingCount}<br></br>{sendingTime}ms</div>
         {status==='starting'
         ? <div className='Status'>CONECTANDO</div>
         :null

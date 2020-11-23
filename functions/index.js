@@ -3,6 +3,8 @@ const admin = require('firebase-admin')
 
 admin.initializeApp()
 
+const MAX_TIME = 5000
+
 exports.addLove = functions.https.onCall((data, context) => {
   if (!context.auth) {
     throw new functions.https.HttpsError('failed-precondition', 'Not authenticated.')
@@ -27,11 +29,17 @@ exports.addLove = functions.https.onCall((data, context) => {
     .collection('love')
     .add(dataToSave)
     .then((docRef) => {
-      // TODO: bigquery
       return { id: docRef.id }
     })
     .catch(console.error)
 })
+
+
+exports.autoDeleteLove = functions.firestore.document('love/{loveID}').onCreate((snap, context) => {
+  return new Promise(resolve => setTimeout(resolve, MAX_TIME))
+  .then(() => snap.ref.delete())
+})
+
 
 const { BigQuery } = require('@google-cloud/bigquery')
 

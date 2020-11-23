@@ -95,3 +95,12 @@ body {
     opacity: 0;
   }
 }
+
+.Count {
+  position: absolute;
+  width: 100%;
+  top: 20px;
+  right: 55px;
+  text-align: right;
+  color: black;
+}
