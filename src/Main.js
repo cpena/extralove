@@ -4,7 +4,7 @@ import firebase from 'firebase/app'
 import 'firebase/firestore'
 import 'firebase/functions'
 
-const TIMEOUT_SEND = 30000
+const TIMEOUT_ERROR = 5000
 
 class Main extends React.Component {
   constructor (props) {
@@ -13,62 +13,52 @@ class Main extends React.Component {
     this.currentDoc = null
     this.state = {
       status: 'idle',
-      loveStream: props.loveStream,
-      loveSendingCount: 0,
-      sendingTime: 0
+      messagesStream: props.messagesStream,
+      messagesSendingCount: 0,
+      sendingTime: 0,
+      message: ''
     }
   }
 
   componentWillReceiveProps (nextProps) {
-    if (JSON.stringify(nextProps.loveStream) !== JSON.stringify(this.state.loveStream)) {
-      this.setState({ loveStream: nextProps.loveStream })
+    if (JSON.stringify(nextProps.messagesStream) !== JSON.stringify(this.state.messagesStream)) {
+      this.setState({ messagesStream: nextProps.messagesStream })
     }
   }
 
-  startSendingLove = (uid) => {
-    this.setState({status: 'starting'})
-
-    const addLove = firebase.functions().httpsCallable('addLove')
-    addLove({ uid })
-      .then((result) => {
-        this.currentDoc = result.data.id
-
-        this.setState({status: 'sending'})
-
-        this.timeoutSending = setTimeout(() => {
-          this.stopSendingLove()
-        }, TIMEOUT_SEND)
-      })
+  onMessageChange(event) {
+    this.setState({message: event.target.value});
   }
-  
-  stopSendingLove = () => {
-    if (this.currentDoc) {
-      firebase
-        .firestore()
-        .collection('love')
-        .doc(this.currentDoc)
-        .delete()
-        .catch(console.error)
-      this.currentDoc = null
-      if (this.timeoutSending) {
-        clearTimeout(this.timeoutSending)
-        this.timeoutSending = null
-      }
-      this.setState({status: 'idle'})
+
+  sendMessage = () => {
+    if (this.state.message === '') {
+      return
     }
-  }
 
-  sendLove = (uid) => {
     const startDate = new Date()
-    this.setState({loveSendingCount: this.state.loveSendingCount + 1}, () => {
-
-      const addLove = firebase.functions().httpsCallable('addLove')
-      addLove({ uid })
+    this.setState({messagesSendingCount: this.state.messagesSendingCount + 1}, () => {
+      const addMessage = firebase.functions().httpsCallable('addMessage')
+      
+      addMessage({ uid: this.props.uid, message: this.state.message })
         .then((result) => {
-          
+          console.log(result)
+
           const endDate   = new Date()
           const sendingTime = (endDate.getTime() - startDate.getTime())
-          this.setState({loveSendingCount: this.state.loveSendingCount - 1, sendingTime})
+          this.setState({messagesSendingCount: this.state.messagesSendingCount - 1, sendingTime, message: ''})
+
+          if (result.data.id === null) {
+            this.setState({error: 'Vamos!, dale, puedes enviar más amor (score: ' + result.data.sentiment.score.toFixed(2) + ')'}, () => {
+              setTimeout(() => {
+                this.setState({error: ''})
+              }, TIMEOUT_ERROR)
+            })
+          }
+          
+        })
+        .catch((e) => {
+          console.log(e)
+          
         })
     })
 
@@ -76,30 +66,33 @@ class Main extends React.Component {
   }
 
   render () {
-    const { uid } = this.props
-    const { loveStream, status, loveSendingCount, sendingTime } = this.state
+    const { messagesStream, status, messagesSendingCount, sendingTime, error } = this.state
 
-    console.log(status, loveStream)
+    console.log(status, messagesStream)
     return (
       <div className='Main'>
         <div className='Background'>
-          <MapContainer markers={loveStream}/>
+          <MapContainer markers={messagesStream}/>
+        </div>
+        <div
+          className={'Text ' + status}>
+          <textarea value={this.state.message} onChange={(e) => this.onMessageChange(e)}/>    
         </div>
         <div
           className={'Button ' + status}
           /*
-          onMouseDown={() => this.startSendingLove(uid)}
+          onMouseDown={() => this.startSendingLove()}
           onMouseUp={() => this.stopSendingLove()}
           onMouseLeave={() => this.stopSendingLove()}
-          onTouchStart={() => this.startSendingLove(uid)}
+          onTouchStart={() => this.startSendingLove()}
           onTouchEnd={() => this.stopSendingLove()}
           */
-          onClick={() => this.sendLove(uid)}
+          onClick={() => this.sendMessage()}
         />
-        <div className='Count'>SENDING: {loveSendingCount}<br></br>{sendingTime}ms</div>
+        <div className='Count'>SENDING: {messagesSendingCount}<br></br>{sendingTime}ms</div>
         {status==='starting'
         ? <div className='Status'>CONECTANDO</div>
-        :null
+        : <div className='Status'>{error}</div>
         }
       </div>
     )

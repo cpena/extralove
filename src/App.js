@@ -10,7 +10,7 @@ class App extends React.Component {
     super(props)
     this.state = {
       loading: true,
-      loveStream: []
+      messagesStream: []
     }
   }
 
@@ -39,17 +39,18 @@ class App extends React.Component {
     return new Promise((resolve, reject) => {
       this.unsubscribeFn = firebase
         .firestore()
-        .collection('love')
+        .collection('messages')
+        .where('status', '==', 'NEW')
         .onSnapshot(
           (querySnapshot) => {
-            const loveStream = []
+            const messagesStream = []
             querySnapshot.forEach((doc) => {
               let data = doc.data()
               data.id = doc.id
-              loveStream.push(data)
+              messagesStream.push(data)
             })
-            console.log(loveStream)
-            this.setState({ loveStream })
+            console.log(messagesStream)
+            this.setState({ messagesStream: messagesStream })
           },
           (error) => {
             console.error(error)
@@ -67,12 +68,12 @@ class App extends React.Component {
   }
 
   render () {
-    const { loading, uid, loveStream } = this.state
+    const { loading, uid, messagesStream } = this.state
     return (
       <div className='App'>
         {loading
           ? <Loading />
-          : <Main uid={uid} loveStream={loveStream} />
+          : <Main uid={uid} messagesStream={messagesStream} />
         }
       </div>
     )
