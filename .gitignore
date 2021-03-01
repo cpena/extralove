@@ -65,5 +65,7 @@ node_modules/
 .env
 
 build
+.idea/
+.idea
 
 src/firebase-config.json

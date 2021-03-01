@@ -7,7 +7,8 @@ import * as serviceWorker from './serviceWorker';
 import firebase from 'firebase/app'
 import "firebase/performance"
 
-const firebaseConfig = require('./firebase-config.json')
+const firebaseConfig = require('./firebase-config')
+
 firebase.initializeApp(firebaseConfig)
 
 firebase.performance();
