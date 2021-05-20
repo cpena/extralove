@@ -4,8 +4,9 @@ const language = require('@google-cloud/language');
 
 admin.initializeApp()
 
-const MAX_TIME = 10000
+const MAX_TIME_SECONDS = 60 // 1 minuto
 const SCORE_THRESHOLD = 0.25
+const MAX_WRITES = 500
 
 const analyzeMessage = async (message) => {
   const client = new language.LanguageServiceClient();
@@ -66,8 +67,49 @@ exports.addMessage = functions.https.onCall((data, context) => {
     })
 })
 
+exports.updateLikesUnlikesMessages = functions.firestore.document('feelings/{feelingID}').onWrite((change, context) => {
+  const document = change.after.exists ? change.after.data() : null
+  const oldDocument = change.before.data()
+  const messageId = document ? document.message_id : oldDocument.message_id
 
-exports.autoDeleteMessage = functions.firestore.document('messages/{messageID}').onCreate((snap, context) => {
-  return new Promise(resolve => setTimeout(resolve, MAX_TIME))
-    .then(() => snap.ref.update({ status: 'OLD' }))
+  return admin.firestore()
+    .collection('feelings')
+    .where('message_id', '==', messageId)
+    .get()
+    .then((querySnapshot) => {
+      let likes = 0
+      let unlikes = 0
+      querySnapshot.forEach((doc) => {
+        let data = doc.data()
+        if (data.state === 1) {
+          likes++
+        } else if (data.state === -1) {
+          unlikes++
+        }
+      })
+
+      return admin.firestore()
+        .collection('messages')
+        .doc(messageId)
+        .update({likes, unlikes})
+    })
+   
+})
+
+
+exports.autoDeleteMessage = functions.pubsub.topic('auto-delete-messages').onPublish((message) => {
+  const db = admin.firestore()
+  const minDate = new Date( Date.now() - 1000 * MAX_TIME_SECONDS )
+
+  return db
+    .collection('messages')
+    .where('timestamp', '<', minDate)
+    .get()
+    .then((querySnapshot) => {
+      let batch = db.batch()
+      querySnapshot.forEach((doc) => {
+        batch.update(db.collection('messages').doc(doc.id), {"status": 'OLD'})
+      })
+      return batch.commit()
+    })
 })
