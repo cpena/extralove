@@ -7,7 +7,7 @@ const mapStyles = [{"elementType":"geometry","stylers":[{"color":"#f5f5f5"}]},{"
 
 class MapContainer extends Component {
   state = {
-    showingInfoWindow: false,
+    showingInfoWindow: true,
     activeMarker: {},
     selectedPlace: {},
   }
@@ -52,6 +52,15 @@ class MapContainer extends Component {
     }
   };
 
+  getBounds = (markers) => {
+    let bounds = new this.props.google.maps.LatLngBounds()
+    for (let i in markers) {
+      let m = markers[i]
+      bounds.extend({ lat: m.lat, lng: m.lng});
+    }
+    return bounds
+  }
+
   render () {
     const center = {
       lat: 11.5,
@@ -59,11 +68,14 @@ class MapContainer extends Component {
     }
     const zoom = 3
     const { activeMarker, showingInfoWindow, selectedPlace } = this.state
-    console.log({ activeMarker, showingInfoWindow, selectedPlace })
+    let bounds = this.getBounds(this.props.markers)
+    console.log('Map update', { activeMarker, showingInfoWindow, selectedPlace, bounds })
     return (  
         <Map google={this.props.google} 
           zoom={zoom}
+          minZoom={zoom}
           initialCenter={center}
+          // bounds={bounds}
           styles={mapStyles}
           onClick={(props) => this.onMapClicked(props)}>
           {this.props.markers.map(m => {

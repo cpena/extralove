@@ -9,9 +9,11 @@ import "firebase/performance"
 
 const firebaseConfig = require('./firebase-config')
 
+// Initialize Firebase config
 firebase.initializeApp(firebaseConfig)
 
-firebase.performance();
+// Initialize performance monitoring
+firebase.performance()
 
 ReactDOM.render(<App />, document.getElementById('root'))
 
