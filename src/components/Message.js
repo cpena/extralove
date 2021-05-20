@@ -26,8 +26,13 @@ class Message extends Component {
     const { message } = this.state
     if (message.userFeeling === 1) {
       message.userFeeling = null
+      message.likes = message.likes ? message.likes - 1 : 0
     } else {
+      if (message.userFeeling === -1) {
+        message.unlikes = message.unlikes ? message.unlikes - 1 : 0
+      }
       message.userFeeling = 1
+      message.likes = message.likes ? message.likes + 1 : 1
     }
     this.setState({message}, () => {
       this.updateUserFeeling()
@@ -38,8 +43,14 @@ class Message extends Component {
     const { message } = this.state
     if (message.userFeeling === -1) {
       message.userFeeling = null
+      message.unlikes = message.unlikes ? message.unlikes - 1 : 0
     } else {
+      if (message.userFeeling === 1) {
+        message.likes = message.likes ? message.likes - 1 : 0
+      }
+
       message.userFeeling = -1
+      message.unlikes = message.unlikes ? message.unlikes + 1 : 1
     }
     this.setState({message}, () => {
       this.updateUserFeeling()
@@ -51,6 +62,10 @@ class Message extends Component {
     const { uid } = this.props
 
     console.log({state: message.userFeeling, uid, message_id: message.id})
+    if (message.userFeeling === undefined) {
+      return
+    }
+
     if (message.userFeeling === null) {
       firebase
       .firestore()
